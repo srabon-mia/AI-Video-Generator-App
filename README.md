@@ -1,3 +1,5 @@
+NOT DONE YET
+
 # AI Video Generator — React Native + Expo
 
 A mobile app that generates AI videos from text prompts using Kling v1.6 via fal.ai.
