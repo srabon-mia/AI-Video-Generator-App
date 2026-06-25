@@ -1,11 +1,7 @@
 // backend/app/api/status/[requestId]/route.ts
 // Polls fal.ai for job status and returns the video URL when complete.
 
-import * as fal from "@fal-ai/serverless-client";
-
-fal.config({
-  credentials: process.env.FAL_KEY!,
-});
+import { fal } from "@fal-ai/client";
 
 const MODEL_MAP: Record<string, string> = {
   fast: "fal-ai/kling-video/v1.6/standard/text-to-video",
@@ -37,10 +33,10 @@ export async function GET(
     }
 
     if (statusResult.status === "COMPLETED") {
-      const result = await fal.queue.result(usedModel, { requestId });
+      const output = statusResult.response as any;
       return Response.json({
         status: "COMPLETED",
-        videoUrl: result.video?.url ?? null,
+        videoUrl: output?.video?.url ?? null,
       });
     }
 

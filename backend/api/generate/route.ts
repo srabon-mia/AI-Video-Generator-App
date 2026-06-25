@@ -2,11 +2,7 @@
 // Deploy this as a Next.js app on Vercel.
 // Set FAL_KEY in your Vercel environment variables — never in the mobile app.
 
-import * as fal from "@fal-ai/serverless-client";
-
-fal.config({
-  credentials: process.env.FAL_KEY!,
-});
+import { fal } from "@fal-ai/client";
 
 const MODEL_MAP: Record<string, string> = {
   fast: "fal-ai/kling-video/v1.6/standard/text-to-video",
