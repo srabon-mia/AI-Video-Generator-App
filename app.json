@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "AI Video Gen",
+    "slug": "ai-video-gen",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0f"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yourname.aivideogen",
+      "infoPlist": {
+        "NSPhotoLibraryAddUsageDescription": "Save generated videos to your photo library."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0f"
+      },
+      "package": "com.yourname.aivideogen",
+      "permissions": ["WRITE_EXTERNAL_STORAGE", "READ_EXTERNAL_STORAGE"]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow AI Video Gen to save videos to your photo library.",
+          "savePhotosPermission": "Allow AI Video Gen to save videos to your photo library.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ],
+    "scheme": "ai-video-gen",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
