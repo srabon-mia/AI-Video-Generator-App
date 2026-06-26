@@ -36,7 +36,6 @@ export default function GenerateScreen() {
   const [duration, setDuration] = useState<Duration>("5");
   const [quality, setQuality] = useState<Quality>("fast");
   const [usage, setUsage] = useState({ used: 0, left: 3 });
-  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
 
   const { generate, cancel, status, progress, videoUrl, error } = useVideoJob();
 
@@ -65,16 +64,15 @@ export default function GenerateScreen() {
     setUsage(updated);
   };
 
+  // index.tsx - replace handleSave with this
   const handleSave = async () => {
     if (!videoUrl) return;
-    if (!mediaPermission?.granted) {
-      const { granted } = await requestMediaPermission();
-      if (!granted) {
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync(false); // false = no write-only
+      if (status !== "granted") {
         Alert.alert("Permission needed", "Allow access to save videos to your library.");
         return;
       }
-    }
-    try {
       await MediaLibrary.saveToLibraryAsync(videoUrl);
       Alert.alert("Saved!", "Video saved to your photo library.");
     } catch {

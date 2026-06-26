@@ -33,7 +33,8 @@
         {
           "photosPermission": "Allow AI Video Gen to save videos to your photo library.",
           "savePhotosPermission": "Allow AI Video Gen to save videos to your photo library.",
-          "isAccessMediaLocationEnabled": true
+          "isAccessMediaLocationEnabled": true,
+          "granularPermissions": ["photo", "video"]
         }
       ]
     ],
