@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
@@ -23,6 +24,8 @@ export default function SettingsScreen() {
   const [autoSave, setAutoSave] = useState(false);
   const [keepHistory, setKeepHistory] = useState(true);
   const [usage, setUsage] = useState({ used: 0, left: 3 });
+  const [editingUrl, setEditingUrl] = useState(false);
+  const [urlDraft, setUrlDraft] = useState("");
 
   useFocusEffect(
     useCallback(() => {
@@ -121,28 +124,50 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Backend */}
         <SectionTitle>Connection</SectionTitle>
         <View style={s.block}>
-          <TouchableOpacity style={s.row} onPress={handleConfigureBackend} activeOpacity={0.7}>
-            <View style={s.rowLeft}>
-              <View style={[s.icon, s.iconBlue]}>
-                <Text style={s.iconEmoji}>⚡</Text>
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={s.rowText}>Backend URL</Text>
-                <Text style={s.rowSub} numberOfLines={1}>
-                  {backendUrl}
-                </Text>
-              </View>
+          {editingUrl ? (
+            <View style={s.row}>
+              <TextInput
+                style={s.urlInput}
+                value={urlDraft}
+                onChangeText={setUrlDraft}
+                autoFocus
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="https://your-app.vercel.app"
+                placeholderTextColor="#444"
+              />
+              <TouchableOpacity
+                onPress={async () => {
+                  const trimmed = urlDraft.trim().replace(/\/$/, "");
+                  setBackendUrl(trimmed);
+                  await AsyncStorage.setItem(BACKEND_KEY, trimmed);
+                  setEditingUrl(false);
+                }}
+              >
+                <Text style={s.urlSave}>Save</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={s.chevron}>›</Text>
-          </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={s.row}
+              onPress={() => { setUrlDraft(backendUrl); setEditingUrl(true); }}
+              activeOpacity={0.7}
+            >
+              <View style={s.rowLeft}>
+                <View style={[s.icon, s.iconBlue]}>
+                  <Text style={s.iconEmoji}>⚡</Text>
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={s.rowText}>Backend URL</Text>
+                  <Text style={s.rowSub} numberOfLines={1}>{backendUrl}</Text>
+                </View>
+              </View>
+              <Text style={s.chevron}>›</Text>
+            </TouchableOpacity>
+          )}
         </View>
-        <Text style={s.blockNote}>
-          Point this to your Next.js backend that proxies fal.ai. Your API key
-          should never live in the app.
-        </Text>
 
         {/* Preferences */}
         <SectionTitle>Preferences</SectionTitle>
@@ -264,4 +289,17 @@ const s = StyleSheet.create({
 
   about: { marginTop: 32, alignItems: "center", gap: 4 },
   aboutText: { fontSize: 12, color: "#333" },
+
+  urlInput: {
+    flex: 1,
+    color: "#e0e0ff",
+    fontSize: 13,
+    paddingVertical: 4,
+  },
+  urlSave: {
+    color: "#6c47ff",
+    fontSize: 13,
+    fontWeight: "500",
+    paddingLeft: 12,
+  },
 });
