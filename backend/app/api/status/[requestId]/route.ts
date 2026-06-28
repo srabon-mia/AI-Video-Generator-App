@@ -29,12 +29,21 @@ export async function GET(
     }
 
     if (statusResult.status === "COMPLETED") {
-      console.log("full statusResult:", JSON.stringify(statusResult));
-      const output = statusResult.response as any;
+      const resultRes = await fetch(statusResult.response_url, {
+        headers: { "Authorization": `Key ${process.env.FAL_KEY}` }
+      });
+      const result = await resultRes.json();
+      console.log("result:", JSON.stringify(result));
+
+      const videoUrl =
+        result?.video?.url ??
+        result?.videos?.[0]?.url ??
+        result?.url ??
+        null;
+
       return Response.json({
         status: "COMPLETED",
-        videoUrl: null,
-        debug: JSON.stringify(statusResult), // stringify it so it survives serialization
+        videoUrl,
       });
     }
 
