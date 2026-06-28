@@ -13,9 +13,12 @@ import {
 import { Video, ResizeMode } from "expo-av";
 import * as MediaLibrary from "expo-media-library";
 import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system/legacy";
+import * as VideoThumbnails from "expo-video-thumbnails";
 import { useVideoJob } from "../hooks/useVideoJob";
 import { canGenerate, incrementUsage, getUsage } from "../lib/usage";
 import { saveJob } from "../lib/storage";
+import { VideoSkeleton } from "../components/SkeletonLoader";
 
 const EXAMPLES = [
   "A cinematic drone shot over a misty mountain forest at sunrise",
@@ -59,48 +62,69 @@ export default function GenerateScreen() {
     }
 
     await generate(prompt.trim(), { aspectRatio: ratio, duration, quality });
-    await incrementUsage();
-    const updated = await getUsage();
-    setUsage(updated);
   };
 
   // index.tsx - replace handleSave with this
-  const handleSave = async () => {
-    if (!videoUrl) return;
+  const handleSave = async (url: string) => {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync(false); // false = no write-only
+      const { status } = await MediaLibrary.requestPermissionsAsync(true);
       if (status !== "granted") {
         Alert.alert("Permission needed", "Allow access to save videos to your library.");
         return;
       }
-      await MediaLibrary.saveToLibraryAsync(videoUrl);
+
+      // Download to local file first
+      const filename = `ai-video-${Date.now()}.mp4`;
+      const localUri = FileSystem.documentDirectory + filename;
+      const { uri } = await FileSystem.downloadAsync(url, localUri);
+      await MediaLibrary.saveToLibraryAsync(uri);
+      await FileSystem.deleteAsync(uri, { idempotent: true });
+      
       Alert.alert("Saved!", "Video saved to your photo library.");
-    } catch {
-      Alert.alert("Error", "Could not save video.");
+    } catch (e: any) {
+      Alert.alert("Error", e.message);
     }
   };
 
-  const handleShare = async () => {
-    if (!videoUrl) return;
-    const canShare = await Sharing.isAvailableAsync();
-    if (canShare) {
-      await Sharing.shareAsync(videoUrl);
+  const handleShare = async (url: string) => {
+    try {
+      const localUri = FileSystem.cacheDirectory + `ai-video-${Date.now()}.mp4`;
+      const { uri } = await FileSystem.downloadAsync(url, localUri);
+      await Sharing.shareAsync(uri, { mimeType: "video/mp4" });
+      await FileSystem.deleteAsync(uri, { idempotent: true });
+    } catch (e: any) {
+      Alert.alert("Error", e.message);
     }
   };
 
   const handleSaveToHistory = async () => {
     if (!videoUrl) return;
+
+    let thumbnailUri: string | null = null;
+    try {
+      const { uri } = await VideoThumbnails.getThumbnailAsync(videoUrl, {
+        time: 0,
+      });
+      thumbnailUri = uri;
+    } catch {
+      thumbnailUri = null;
+    }
+
     await saveJob({
       id: Date.now().toString(),
       prompt,
       videoUrl,
+      thumbnailUri,
       createdAt: Date.now(),
       settings: { aspectRatio: ratio, duration, quality },
     });
   };
 
   useEffect(() => {
-    if (status === "done") handleSaveToHistory();
+    if (status === "done") {
+      handleSaveToHistory();
+      incrementUsage().then(() => getUsage().then(setUsage));
+    }
   }, [status]);
 
   const isLoading = status === "queued" || status === "running";
@@ -239,6 +263,13 @@ export default function GenerateScreen() {
         )}
 
         {/* Result */}
+        {isLoading && (
+          <>
+            <Text style={s.label}>RESULT</Text>
+            <VideoSkeleton />
+          </>
+        )}
+
         {status === "done" && videoUrl && (
           <View style={s.resultCard}>
             <Text style={s.label}>RESULT</Text>
@@ -254,10 +285,10 @@ export default function GenerateScreen() {
               {prompt}
             </Text>
             <View style={s.resultActions}>
-              <TouchableOpacity style={s.actionBtn} onPress={handleSave}>
+              <TouchableOpacity style={s.actionBtn} onPress={() => handleSave(videoUrl!)}>
                 <Text style={s.actionBtnText}>⬇ Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.actionBtn} onPress={handleShare}>
+              <TouchableOpacity style={s.actionBtn} onPress={() => handleShare(videoUrl!)}>
                 <Text style={s.actionBtnText}>↗ Share</Text>
               </TouchableOpacity>
             </View>

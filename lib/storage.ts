@@ -7,6 +7,7 @@ export type VideoJob = {
   id: string;
   prompt: string;
   videoUrl: string;
+  thumbnailUri: string | null;
   createdAt: number;
   settings: {
     aspectRatio: "16:9" | "9:16" | "1:1";

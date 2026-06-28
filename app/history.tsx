@@ -7,12 +7,14 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  Image
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Video, ResizeMode } from "expo-av";
 import { getHistory, clearHistory, VideoJob } from "../lib/storage";
 import * as MediaLibrary from "expo-media-library";
 import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system/legacy";
 
 export default function HistoryScreen() {
   const [history, setHistory] = useState<VideoJob[]>([]);
@@ -58,28 +60,45 @@ export default function HistoryScreen() {
 
   const handleSave = async (url: string) => {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync(false);
+      const { status } = await MediaLibrary.requestPermissionsAsync(true);
       if (status !== "granted") {
         Alert.alert("Permission needed", "Allow access to save videos to your library.");
         return;
       }
-      await MediaLibrary.saveToLibraryAsync(url);
+
+      // Download to local file first
+      const filename = `ai-video-${Date.now()}.mp4`;
+      const localUri = FileSystem.documentDirectory + filename;
+      const { uri } = await FileSystem.downloadAsync(url, localUri);
+      await MediaLibrary.saveToLibraryAsync(uri);
+      await FileSystem.deleteAsync(uri, { idempotent: true });
+      
       Alert.alert("Saved!", "Video saved to your photo library.");
-    } catch {
-      Alert.alert("Error", "Could not save video.");
+    } catch (e: any) {
+      Alert.alert("Error", e.message);
     }
   };
 
   const handleShare = async (url: string) => {
-    const canShare = await Sharing.isAvailableAsync();
-    if (canShare) await Sharing.shareAsync(url);
+    try {
+      const localUri = FileSystem.cacheDirectory + `ai-video-${Date.now()}.mp4`;
+      const { uri } = await FileSystem.downloadAsync(url, localUri);
+      await Sharing.shareAsync(uri, { mimeType: "video/mp4" });
+      await FileSystem.deleteAsync(uri, { idempotent: true });
+    } catch (e: any) {
+      Alert.alert("Error", e.message);
+    }
   };
 
   if (selected) {
     return (
       <SafeAreaView style={s.container}>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => setSelected(null)} style={s.backBtn}>
+          <TouchableOpacity 
+            onPress={() => setSelected(null)} 
+            style={s.backBtn}
+            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+          >
             <Text style={s.backBtnText}>← Back</Text>
           </TouchableOpacity>
           <Text style={s.headerTitle}>Replay</Text>
@@ -149,7 +168,15 @@ export default function HistoryScreen() {
               activeOpacity={0.75}
             >
               <View style={s.itemThumb}>
-                <Text style={s.itemThumbIcon}>▶</Text>
+                {item.thumbnailUri ? (
+                  <Image
+                    source={{ uri: item.thumbnailUri }}
+                    style={{ width: 56, height: 42, borderRadius: 8 }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={s.itemThumbIcon}>▶</Text>
+                )}
               </View>
               <View style={s.itemInfo}>
                 <Text style={s.itemPrompt} numberOfLines={2}>
@@ -193,7 +220,7 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: "500", color: "#f0f0ff" },
   clearAll: { fontSize: 13, color: "#6c47ff", marginTop: 6 },
 
-  backBtn: { paddingVertical: 4 },
+  backBtn: { paddingVertical: 10, paddingHorizontal: 4 },
   backBtnText: { fontSize: 15, color: "#a78bfa" },
 
   empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: 40 },
