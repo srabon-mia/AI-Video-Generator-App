@@ -29,10 +29,12 @@ export async function GET(
     }
 
     if (statusResult.status === "COMPLETED") {
+      console.log("full statusResult:", JSON.stringify(statusResult));
       const output = statusResult.response as any;
       return Response.json({
         status: "COMPLETED",
-        videoUrl: output?.video?.url ?? null,
+        videoUrl: null,
+        debug: JSON.stringify(statusResult), // stringify it so it survives serialization
       });
     }
 

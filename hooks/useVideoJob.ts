@@ -95,7 +95,10 @@ export function useVideoJob() {
 
           const data = await pollRes.json();
 
+          console.log("poll response:", JSON.stringify(data));
+
           if (data.status === "COMPLETED") {
+            console.log("completed data:", JSON.stringify(data));
             stopPolling();
             setVideoUrl(data.videoUrl);
             setStatus("done");

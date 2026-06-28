@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const USAGE_KEY = "daily_usage";
-const DAILY_LIMIT = 3;
+const DAILY_LIMIT = 10;
 
 type UsageRecord = {
   date: string;
