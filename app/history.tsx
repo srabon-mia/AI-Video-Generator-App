@@ -11,6 +11,8 @@ import {
 import { useFocusEffect } from "expo-router";
 import { Video, ResizeMode } from "expo-av";
 import { getHistory, clearHistory, VideoJob } from "../lib/storage";
+import * as MediaLibrary from "expo-media-library";
+import * as Sharing from "expo-sharing";
 
 export default function HistoryScreen() {
   const [history, setHistory] = useState<VideoJob[]>([]);
@@ -54,6 +56,25 @@ export default function HistoryScreen() {
     return d.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
+  const handleSave = async (url: string) => {
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync(false);
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Allow access to save videos to your library.");
+        return;
+      }
+      await MediaLibrary.saveToLibraryAsync(url);
+      Alert.alert("Saved!", "Video saved to your photo library.");
+    } catch {
+      Alert.alert("Error", "Could not save video.");
+    }
+  };
+
+  const handleShare = async (url: string) => {
+    const canShare = await Sharing.isAvailableAsync();
+    if (canShare) await Sharing.shareAsync(url);
+  };
+
   if (selected) {
     return (
       <SafeAreaView style={s.container}>
@@ -79,6 +100,14 @@ export default function HistoryScreen() {
             <MetaBadge label={selected.settings.duration + "s"} />
             <MetaBadge label={selected.settings.quality} />
             <Text style={s.metaDate}>{formatDate(selected.createdAt)}</Text>
+          </View>
+          <View style={s.resultActions}>
+            <TouchableOpacity style={s.actionBtn} onPress={() => handleSave(selected.videoUrl)}>
+              <Text style={s.actionBtnText}>⬇ Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.actionBtn} onPress={() => handleShare(selected.videoUrl)}>
+              <Text style={s.actionBtnText}>↗ Share</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
@@ -210,4 +239,8 @@ const s = StyleSheet.create({
     paddingVertical: 3,
   },
   badgeText: { fontSize: 11, color: "#888" },
+
+  resultActions: { flexDirection: "row", gap: 10, marginTop: 16 },
+  actionBtn: { flex: 1, backgroundColor: "#1e1e2e", borderRadius: 10, paddingVertical: 12, alignItems: "center", borderWidth: 0.5, borderColor: "#2a2a3a" },
+  actionBtnText: { color: "#a78bfa", fontWeight: "500", fontSize: 13 },
 });
