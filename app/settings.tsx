@@ -11,6 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getUsage } from "../lib/usage";
 import { clearHistory } from "../lib/storage";
@@ -26,6 +27,9 @@ export default function SettingsScreen() {
   const [usage, setUsage] = useState({ used: 0, left: 3 });
   const [editingUrl, setEditingUrl] = useState(false);
   const [urlDraft, setUrlDraft] = useState("");
+
+  const { signOut } = useAuth();
+  const { user } = useUser();
 
   useFocusEffect(
     useCallback(() => {
@@ -222,6 +226,22 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <Text style={s.chevron}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Account */}
+        <SectionTitle>Account</SectionTitle>
+        <View style={s.block}>
+          <TouchableOpacity style={s.row} onPress={() => signOut()} activeOpacity={0.7}>
+            <View style={s.rowLeft}>
+              <View style={[s.icon, s.iconRed]}>
+                <Text style={s.iconEmoji}>⎋</Text>
+              </View>
+              <View>
+                <Text style={[s.rowText, { color: "#f87171" }]}>Sign out</Text>
+                <Text style={s.rowSub}>{user?.primaryEmailAddress?.emailAddress}</Text>
+              </View>
+            </View>
           </TouchableOpacity>
         </View>
 

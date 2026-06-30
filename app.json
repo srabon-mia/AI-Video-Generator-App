@@ -24,7 +24,10 @@
         "backgroundColor": "#0a0a0f"
       },
       "package": "com.yourname.aivideogen",
-      "permissions": ["WRITE_EXTERNAL_STORAGE", "READ_EXTERNAL_STORAGE"]
+      "permissions": [
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -34,9 +37,13 @@
           "photosPermission": "Allow AI Video Gen to save videos to your photo library.",
           "savePhotosPermission": "Allow AI Video Gen to save videos to your photo library.",
           "isAccessMediaLocationEnabled": true,
-          "granularPermissions": ["photo", "video"]
+          "granularPermissions": [
+            "photo",
+            "video"
+          ]
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "scheme": "ai-video-gen",
     "experiments": {
