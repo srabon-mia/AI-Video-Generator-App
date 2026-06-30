@@ -1,0 +1,4 @@
+{
+  "/api/status/[requestId]/route": "/api/status/[requestId]",
+  "/api/generate/route": "/api/generate"
+}
