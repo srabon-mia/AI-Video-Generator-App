@@ -1,19 +1,36 @@
-// backend/app/api/generate/route.ts
-// Deploy this as a Next.js app on Vercel.
-// Set FAL_KEY in your Vercel environment variables — never in the mobile app.
-
 import { fal } from "@fal-ai/client";
+import { getUserId } from "../../lib/auth";
+import { supabase } from "../../lib/supabase";
 
 const MODEL_MAP: Record<string, string> = {
   fast: "fal-ai/kling-video/v1.6/standard/text-to-video",
   standard: "fal-ai/kling-video/v1.6/pro/text-to-video",
 };
 
+const DAILY_LIMIT = 3;
+const today = () => new Date().toISOString().split("T")[0];
+
 export async function POST(req: Request) {
   try {
-    const { prompt, settings } = await req.json();
+    // Verify auth
+    const userId = await getUserId(req);
+    if (!userId) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!prompt || typeof prompt !== "string") {
+    // Check usage
+    const { data: usage } = await supabase
+      .from("usage")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (usage && usage.date === today() && usage.count >= DAILY_LIMIT) {
+      return Response.json({ error: "Daily limit reached" }, { status: 429 });
+    }
+
+    const { prompt, settings } = await req.json();
+    if (!prompt) {
       return Response.json({ error: "Prompt is required." }, { status: 400 });
     }
 
@@ -28,9 +45,20 @@ export async function POST(req: Request) {
       },
     });
 
+    // Increment usage
+    if (usage && usage.date === today()) {
+      await supabase
+        .from("usage")
+        .update({ count: usage.count + 1 })
+        .eq("user_id", userId);
+    } else {
+      await supabase
+        .from("usage")
+        .upsert({ user_id: userId, date: today(), count: 1 });
+    }
+
     return Response.json({ requestId: request_id, model });
   } catch (e: any) {
-    console.error("Generate error:", e);
-    return Response.json({ error: e.message || "Generation failed." }, { status: 500 });
+    return Response.json({ error: e.message }, { status: 500 });
   }
 }
