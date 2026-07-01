@@ -9,6 +9,7 @@ import { useRouter } from "expo-router";
 export default function SignInScreen() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingVerification, setPendingVerification] = useState(false);
@@ -36,7 +37,11 @@ export default function SignInScreen() {
         }
       } else {
         if (!signUpLoaded) return;
-        await signUp.create({ emailAddress: email, password });
+        await signUp.create({ 
+          emailAddress: email, 
+          username: username.trim(), 
+          password 
+        });
         await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
         setPendingVerification(true);
       }
@@ -52,9 +57,16 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       const result = await signUp.attemptEmailAddressVerification({ code });
+      console.log("verify result:", JSON.stringify(result.status));
+      console.log("createdSessionId:", result.createdSessionId);
+      console.log("verify result:", result.status);
+      console.log("missing:", JSON.stringify(result.missingFields));
+      console.log("unverified:", JSON.stringify(result.unverifiedFields));
       if (result.status === "complete") {
         await setActiveSignUp({ session: result.createdSessionId });
-        router.replace("/");
+        router.replace("/");  // make sure this line is there
+      } else {
+        Alert.alert("Error", "Verification incomplete. Try again.");
       }
     } catch (e: any) {
       Alert.alert("Error", e.errors?.[0]?.message || "Invalid code.");
@@ -110,13 +122,23 @@ export default function SignInScreen() {
 
           <TextInput
             style={s.input}
-            placeholder="Email"
+            placeholder={mode === "signin" ? "Email or username" : "Email"}
             placeholderTextColor="#444"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
-            keyboardType="email-address"
+            keyboardType={mode === "signin" ? "default" : "email-address"}
           />
+          {mode === "signup" && (
+            <TextInput
+              style={s.input}
+              placeholder="Username"
+              placeholderTextColor="#444"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+          )}
           <TextInput
             style={s.input}
             placeholder="Password"

@@ -1,23 +1,23 @@
-import { Tabs, Redirect } from "expo-router";
+import { Tabs } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
-import * as SecureStore from "expo-secure-store";
 import { View, ActivityIndicator } from "react-native";
+import { useEffect, useRef } from "react";
+import { useSegments, useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const tokenCache = {
   async getToken(key: string) {
     try {
-      return await SecureStore.getItemAsync(key);
+      return await AsyncStorage.getItem(key);
     } catch {
       return null;
     }
   },
   async saveToken(key: string, value: string) {
     try {
-      return await SecureStore.setItemAsync(key, value);
-    } catch {
-      return;
-    }
+      await AsyncStorage.setItem(key, value);
+    } catch {}
   },
 };
 
@@ -35,6 +35,23 @@ export default function RootLayout() {
 
 function AuthGate() {
   const { isLoaded, isSignedIn } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    mounted.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded || !mounted.current) return;
+    const inAuthScreen = segments[0] === "sign-in";
+    if (!isSignedIn && !inAuthScreen) {
+      router.replace("/sign-in");
+    } else if (isSignedIn && inAuthScreen) {
+      router.replace("/");
+    }
+  }, [isLoaded, isSignedIn, segments]);
 
   if (!isLoaded) {
     return (
@@ -42,10 +59,6 @@ function AuthGate() {
         <ActivityIndicator color="#a78bfa" />
       </View>
     );
-  }
-
-  if (!isSignedIn) {
-    return <Redirect href="/sign-in" />;
   }
 
   return (

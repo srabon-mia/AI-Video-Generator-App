@@ -48,8 +48,7 @@
             "video"
           ]
         }
-      ],
-      "expo-secure-store"
+      ]
     ],
     "scheme": "ai-video-gen",
     "experiments": {
