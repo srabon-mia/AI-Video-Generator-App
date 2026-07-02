@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     // Verify auth
     const userId = await getUserId(req);
     if (!userId) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Unauthorized", tokenReceived: !!req.headers.get("Authorization") }, { status: 401 });
     }
 
     // Check usage
@@ -24,6 +24,10 @@ export async function POST(req: Request) {
       .select("*")
       .eq("user_id", userId)
       .single();
+  
+    console.log("userId:", userId);
+    console.log("usage:", JSON.stringify(usage));
+    console.log("fetchError:", JSON.stringify(fetchError));
 
     if (usage && usage.date === today() && usage.count >= DAILY_LIMIT) {
       return Response.json({ error: "Daily limit reached" }, { status: 429 });
@@ -57,7 +61,7 @@ export async function POST(req: Request) {
         .upsert({ user_id: userId, date: today(), count: 1 });
     }
 
-    return Response.json({ requestId: request_id, model });
+    return Response.json({ requestId: request_id, model, debug: { userId, usage } });
   } catch (e: any) {
     return Response.json({ error: e.message }, { status: 500 });
   }
